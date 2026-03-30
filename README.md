@@ -1,80 +1,116 @@
-# Tann18-AI-Powered-Resume-Analyzer-Scorer
+Project Title
+AI-Powered Resume Analyzer and Candidate Shortlisting System
 
 Problem Statement
-
-Recruiters receive thousands of resumes and need a fast, unbiased way to evaluate candidates against job descriptions. Manual screening is time-consuming and inconsistent.
-
-This project solves that by building an AI system that:
-
-.Parses resumes
-.Compares them with job descriptions
-.Generates a match score and feedback
+Recruiters often receive a large number of resumes for a single job opening. Manually evaluating each resume against the job description is time-consuming, inconsistent, and prone to bias. There is a need for an automated system that can intelligently compare resumes with job requirements, generate meaningful feedback, and rank candidates efficiently.
 
 Approach
-1.Extract text from resume (PDF parsing)
-2.Clean and preprocess text
-3.Compare with job description using NLP techniques
-4.Compute similarity score
-5.Generate improvement suggestions
+The system analyzes resumes against a given job description using a combination of semantic similarity, keyword matching, and skill-based evaluation.
 
-Architecture
+Text Extraction
+Resumes and job descriptions are parsed from PDF or text files using pdfplumber.
+Preprocessing
+Extracted text is cleaned to remove noise and normalize formatting.
+Skill Extraction
+Skills are extracted from the job description to represent employer requirements. These include both technical and soft skills.
+Semantic Matching
+Sentence embeddings are generated using SentenceTransformers. Cosine similarity is used to measure contextual similarity between the resume and job description.
+Keyword Matching
+Token-level overlap between resume and job description is calculated to capture explicit keyword matches.
+Skill Matching
+The system checks whether required skills from the job description are present in the resume.
+Final Scoring
+A weighted score is computed:
+Semantic similarity: 60%
+Keyword overlap: 20%
+Skill match: 20%
+AI Feedback
+An AI model is used to generate recruiter-style feedback, highlighting strengths and weaknesses.
+Bulk Resume Ranking
+Multiple resumes can be uploaded and automatically ranked based on their match score, simulating real-world candidate shortlisting.
 
-Simple Version (write this if no diagram):
+Architecture Description
 
-User Input (Resume + JD)
-        ↓
-Text Extraction (PDF Parser)
-        ↓
-Preprocessing (Cleaning + Tokenization)
-        ↓
-Similarity Engine (TF-IDF / Embeddings)
-        ↓
-Score + Feedback Generator
-        ↓
-Output UI
+User Input (Resume / Multiple Resumes + Job Description)
+↓
+Text Extraction (PDF Parsing)
+↓
+Preprocessing (Cleaning + Validation)
+↓
+Skill Extraction (from Job Description)
+↓
+Embedding Generation (SentenceTransformers)
+↓
+Similarity + Keyword + Skill Scoring
+↓
+Final Score Calculation
+↓
+AI Feedback Generation
+↓
+Single Result View / Ranked Candidate List
+
+Key Features
+
+Semantic similarity using sentence embeddings
+Hybrid scoring system combining multiple evaluation methods
+Skill extraction based on job requirements
+AI-generated recruiter feedback
+Bulk resume upload with ranked shortlisting
+Clean and interactive UI
+Robust error handling and validation
+
+Edge Case Handling
+
+The system includes safeguards to ensure reliability in real-world scenarios:
+
+Detects unreadable or corrupted PDFs and prevents invalid processing
+Handles empty inputs for both resumes and job descriptions
+Flags vague job descriptions with insufficient content
+Detects noisy or meaningless text inputs and avoids misleading scores
+Provides fallback behavior when API keys are missing
+Cleans AI-generated output to remove formatting artifacts such as stray markdown symbols
 
 Setup Instructions
-Clone repo
+
+Clone the repository
 git clone https://github.com/your-username/your-repo.git
-
-Navigate
+Navigate to the project folder
 cd your-repo
-
 Install dependencies
 pip install -r requirements.txt
-
-Run app
-python app.py
-Environment Variables
-
-Create a .env file using:
-
-OPENAI_API_KEY=your_key_here
-HUGGINGFACE_API_KEY=your_key_here
-
-<img width="1920" height="878" alt="image" src="https://github.com/user-attachments/assets/b54555d1-4d1a-408f-9e0b-79bcff50c192" />
-<img width="1920" height="861" alt="image" src="https://github.com/user-attachments/assets/f7dfe04b-38f9-4031-be9d-e8684b4430f7" />
+Create a .env file
+Add your API key:
+GROQ_API_KEY=your_api_key_here
+Run the application
+streamlit run app.py
 
 Dependencies
 
-flask
-numpy
-pandas
+streamlit
+pdfplumber
+spacy
+sentence-transformers
 scikit-learn
+groq
 python-dotenv
-PyPDF2
 
-.env.example file
-OPENAI_API_KEY=your_openai_api_key
-HUGGINGFACE_API_KEY=your_huggingface_api_key
+Screenshots
+<img width="1920" height="880" alt="image" src="https://github.com/user-attachments/assets/1f3d3933-5b28-493c-a676-cf817a1559f3" />
+<img width="1920" height="873" alt="image" src="https://github.com/user-attachments/assets/40027a9b-5c45-408c-809b-ebd96516a973" />
+<img width="1918" height="705" alt="image" src="https://github.com/user-attachments/assets/73d8cedc-cc3e-46ba-a1fd-67527f2bb549" />
+<img width="1920" height="304" alt="image" src="https://github.com/user-attachments/assets/66fa4b3c-99fa-4af1-82a8-04b3ed0ed384" />
 
-Reflection 
-This project was built using a Python-based tech stack, primarily leveraging Flask for the backend and libraries such as scikit-learn and PyPDF2 for processing and analysis. I chose Python because of its strong ecosystem for machine learning and natural language processing, which made it efficient to implement similarity scoring and text analysis. Flask was selected for its simplicity and lightweight nature, allowing rapid prototyping and deployment without unnecessary complexity.
 
-One of the biggest challenges I encountered was accurately comparing resumes with job descriptions in a meaningful way. Initially, simple keyword matching produced poor and inconsistent results, as it failed to capture contextual relevance. To address this, I implemented a more robust approach using TF-IDF vectorization and cosine similarity, which significantly improved the quality of matching. Additionally, handling different resume formats and ensuring reliable text extraction from PDFs required careful preprocessing and error handling.
 
-Another challenge was balancing performance with accuracy. More advanced NLP models could have improved results further, but they also introduced latency and dependency complexity. I had to make trade-offs to ensure the system remained fast, responsive, and easy to run locally.
+Reflection
 
-If I had more time, I would enhance the system by integrating transformer-based models such as BERT to improve semantic understanding. This would allow the system to better interpret nuanced skills and experiences rather than relying primarily on statistical similarity. I would also improve the user interface to make the feedback more interactive and visually appealing, as well as add features such as resume rewriting suggestions and job-specific optimization tips.
+This project was developed using a Python-based stack with Streamlit for the user interface and various machine learning libraries for text processing and similarity analysis. Python was chosen due to its strong ecosystem for natural language processing and ease of rapid prototyping. SentenceTransformers was used to generate embeddings, enabling semantic comparison beyond simple keyword matching.
 
-Overall, this project helped me understand the practical challenges of applying AI to real-world problems, particularly in terms of data variability, system design, and performance trade-offs. It reinforced the importance of choosing the right level of complexity for a given problem while maintaining scalability and usability.
+One of the biggest challenges encountered was ensuring that resume matching was meaningful and not based solely on keyword overlap. Initial approaches using basic text comparison produced inaccurate results, especially when similar concepts were expressed differently. This was addressed by incorporating embedding-based similarity using cosine distance, which significantly improved contextual understanding.
+
+Another challenge was handling real-world variability in input data. Resumes often come in different formats, and some PDFs may not contain extractable text. Additionally, vague job descriptions or noisy inputs could lead to misleading results. To solve this, input validation and edge case handling were implemented to detect and manage such scenarios gracefully.
+
+Balancing accuracy and performance was also an important consideration. While more advanced models could improve results, they would increase latency and complexity. A hybrid scoring system was chosen to maintain a balance between interpretability, efficiency, and effectiveness.
+
+If more time were available, the system could be enhanced by integrating transformer-based models such as BERT for deeper semantic understanding and by introducing a vector database for scalable similarity search. Additional improvements could include a more advanced skill gap analysis, better UI visualization, and exporting ranked results for recruiter workflows.
+

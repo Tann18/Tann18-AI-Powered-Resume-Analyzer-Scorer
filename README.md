@@ -47,7 +47,7 @@ AI Feedback Generation
 ↓
 Single Result View / Ranked Candidate List
 
-.Key Features:
+Key Features:
 .Semantic similarity using sentence embeddings
 .Hybrid scoring system combining multiple evaluation methods
 .AI-based dynamic skill extraction from job descriptions

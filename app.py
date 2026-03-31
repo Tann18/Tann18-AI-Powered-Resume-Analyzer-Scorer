@@ -5,12 +5,12 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from groq import Groq
 import os
-import re  # ADDED
+import re
 
 # CONFIG
 st.set_page_config(page_title="ResumeIQ", layout="wide")
 
-# GLASS UI
+# GLASS UI (UNCHANGED)
 st.markdown("""
 <style>
 body {
@@ -63,7 +63,7 @@ embed_model = SentenceTransformer("paraphrase-MiniLM-L3-v2")
 groq_key = os.getenv("GROQ_API_KEY")
 groq_client = Groq(api_key=groq_key) if groq_key else None
 
-# ---------------- ADDED FUNCTIONS ---------------- #
+# ---------------- UTILS ---------------- #
 
 def clean_text(text):
     text = re.sub(r'\s+', ' ', text)
@@ -76,7 +76,12 @@ def is_garbage(text):
     unique_ratio = len(set(words)) / (len(words) + 1)
     return unique_ratio < 0.3
 
-# FUNCTIONS
+def clean_skill(skill):
+    skill = skill.lower()
+    skill = re.sub(r'[^a-z0-9\s+]', '', skill)
+    return skill.strip()
+
+# ---------------- TEXT EXTRACTION ---------------- #
 
 def extract_text(file):
     text = ""
@@ -96,7 +101,9 @@ def extract_text(file):
 
     return text
 
-def extract_skills(jd):
+# ---------------- RULE BASED SKILLS (FALLBACK) ---------------- #
+
+def extract_skills_rule(jd):
     jd = jd.lower()
 
     TECH = [
@@ -115,7 +122,80 @@ def extract_skills(jd):
         "Soft Skills": list(set(soft_found))
     }
 
-# SCORING
+# ---------------- AI SKILL EXTRACTION (NEW CORE) ---------------- #
+
+def extract_skills_ai(jd):
+
+    if not groq_client:
+        return extract_skills_rule(jd)
+
+    prompt = f"""
+You are an expert recruiter.
+
+Extract ALL relevant skills from this job description.
+
+Return STRICTLY in this format:
+
+Technical Skills:
+- skill1
+- skill2
+
+Soft Skills:
+- skill1
+- skill2
+
+Job Description:
+{jd[:1500]}
+"""
+
+    try:
+        res = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2
+        )
+
+        output = res.choices[0].message.content
+
+        tech = []
+        soft = []
+        current = None
+
+        for line in output.split("\n"):
+            line = line.strip()
+
+            if "technical skills" in line.lower():
+                current = "tech"
+                continue
+
+            elif "soft skills" in line.lower():
+                current = "soft"
+                continue
+
+            if line.startswith("-"):
+                skill = clean_skill(line.replace("-", ""))
+
+                if len(skill) < 2:
+                    continue
+
+                if current == "tech":
+                    tech.append(skill)
+
+                elif current == "soft":
+                    soft.append(skill)
+
+        if not tech and not soft:
+            return extract_skills_rule(jd)
+
+        return {
+            "Technical Skills": list(set(tech)),
+            "Soft Skills": list(set(soft))
+        }
+
+    except Exception:
+        return extract_skills_rule(jd)
+
+# ---------------- SCORING ---------------- #
 
 def semantic_score(resume, jd):
     emb = embed_model.encode([resume, jd])
@@ -134,10 +214,11 @@ def skill_score(resume, skills):
         return 0
 
     score = 0
+
     for s in all_skills:
         if s in resume:
             score += 1
-        elif any(w in resume for w in s.split()):
+        elif any(word in resume for word in s.split()):
             score += 0.5
 
     return score / len(all_skills)
@@ -149,7 +230,7 @@ def final_score(resume, jd, skills):
 
     return round((0.6*s1 + 0.2*s2 + 0.2*s3)*100, 2)
 
-# AI FEEDBACK
+# ---------------- AI FEEDBACK ---------------- #
 
 def generate_feedback(resume, jd):
 
@@ -175,6 +256,7 @@ Resume:
 JD:
 {jd[:1200]}
 """
+
     try:
         res = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -185,7 +267,7 @@ JD:
     except Exception as e:
         return f"Error: {e}"
 
-# INPUT
+# ---------------- INPUT ---------------- #
 
 col1, col2 = st.columns(2)
 
@@ -195,11 +277,10 @@ with col1:
 with col2:
     jd_file = st.file_uploader(" Upload JD", type=["pdf","txt"])
 
-# BULK UPLOAD (ADDED)
 st.markdown("## Bulk Resume Upload (Shortlisting)")
 bulk_files = st.file_uploader("Upload Multiple Resumes", type="pdf", accept_multiple_files=True)
 
-# JD PROCESSING
+# ---------------- JD PROCESS ---------------- #
 
 jd_text = ""
 
@@ -227,18 +308,13 @@ if st.button(" Analyze Resume"):
         st.error("Could not extract text from resume.")
         st.stop()
 
-    if len(jd_text.split()) < 30:
-        st.warning("Job description is too vague.")
-
-    if is_garbage(resume_text):
-        st.error("Resume content invalid.")
+    if is_garbage(resume_text) or is_garbage(jd_text):
+        st.error("Invalid input content.")
         st.stop()
 
-    if is_garbage(jd_text):
-        st.error("Job description invalid.")
-        st.stop()
+    # 🔥 NEW AI SKILLS
+    skills = extract_skills_ai(jd_text)
 
-    skills = extract_skills(jd_text)
     score = final_score(resume_text, jd_text, skills)
 
     st.markdown('<div class="glass">', unsafe_allow_html=True)
@@ -266,22 +342,7 @@ if st.button(" Analyze Resume"):
     with st.spinner("Analyzing..."):
         feedback = generate_feedback(resume_text, jd_text)
 
-    if "Strengths" in feedback:
-        parts = feedback.split("Weaknesses")
-
-        colA, colB = st.columns(2)
-
-        with colA:
-            st.markdown("### Strengths")
-            st.write(parts[0].replace("Strengths:", "").strip())
-
-        with colB:
-            st.markdown("### Gaps")
-            gaps = parts[1] if len(parts) > 1 else ""
-            gaps = gaps.replace(":", "").replace("**", "").strip()
-            st.write(gaps)
-    else:
-        st.write(feedback)
+    st.write(feedback)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -299,13 +360,14 @@ if st.button(" Bulk Analyze & Rank"):
 
     results = []
 
+    skills = extract_skills_ai(jd_text)
+
     for file in bulk_files:
         resume_text = extract_text(file)
 
         if resume_text is None or is_garbage(resume_text):
             continue
 
-        skills = extract_skills(jd_text)
         score = final_score(resume_text, jd_text, skills)
 
         results.append({"name": file.name, "score": score})

@@ -92,7 +92,7 @@ Screenshots:
 <img width="1920" height="865" alt="image" src="https://github.com/user-attachments/assets/da2f3e9f-911a-4428-a407-9f8de65a94c1" />
 
 Project Walkthrough (YouTube):
-https://studio.youtube.com/video/VLkFUJDdjpQ/edit
+https://www.youtube.com/watch?v=VLkFUJDdjpQ
 
 Reflection:
 This project was developed using a Python-based stack with Streamlit for the user interface and various machine learning libraries for text processing and similarity analysis. Python was chosen due to its strong ecosystem for natural language processing and ease of rapid prototyping. SentenceTransformers was used to generate embeddings, enabling semantic comparison beyond simple keyword matching.
